@@ -40,11 +40,13 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Collections\SSocketPacket.cs" />
     <Compile Include="Enums\SSocket_PacketType.cs" />
     <Compile Include="Security\AESManager.cs" />
-    <Compile Include="Models\SSocketPacket.cs" />
+    <Compile Include="Models\SSocketPacketModel.cs" />
     <Compile Include="Net\SSocket.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="Utils.cs" />
   </ItemGroup>
   <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

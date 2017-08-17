@@ -9,9 +9,9 @@ using System.Security.Cryptography;
 using System.Security;
 using System.IO;
 
-using SSocket.Models;
 using SSocket.Security;
 using SSocket.Enums;
+using SSocket.Collections;
 
 namespace SSocket.Net
 {
@@ -213,7 +213,7 @@ namespace SSocket.Net
 
 		private bool IsValidPacket(SSocketPacket packet, SSocket_PacketType type)
 		{
-			if (packet.PacketType == type && packet.DataSize == PublicKey.LongLength)
+			if (packet.GetPacketType() == type && packet.GetPacketDataSize() == PublicKey.LongLength)
 				return true;
 			else
 				throw new SecurityException("Client is send wrong packet.");
@@ -221,8 +221,8 @@ namespace SSocket.Net
 
 		private void CreateShareKey(Socket socket, SSocketPacket serverHelloPacket)
 		{
-			byte[] serverPublicKey = new byte[serverHelloPacket.DataSize];
-			ReceiveFromSocket(socket, (int)serverHelloPacket.DataSize, serverPublicKey);
+			byte[] serverPublicKey = new byte[serverHelloPacket.GetPacketDataSize()];
+			ReceiveFromSocket(socket, (int)serverHelloPacket.GetPacketDataSize(), serverPublicKey);
 
 			ShareKey = keyExchanger.DeriveKeyMaterial(CngKey.Import(serverPublicKey, CngKeyBlobFormat.EccPublicBlob));
 			aesManager = new AESManager(ShareKey);
