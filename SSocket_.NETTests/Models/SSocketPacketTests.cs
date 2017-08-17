@@ -14,7 +14,7 @@ namespace SSocket.Collections.Tests
 		[TestMethod()]
 		public void ParseTest()
 		{
-			SSocketPacket socketPacket = new SSocketPacket(Enums.SSocket_PacketType.Data, 22);
+			SSocketPacket socketPacket = new SSocketPacket(Enums.SSocketPacketType.Data, 22);
 			byte[] socketPacketBytes = socketPacket.GetBytes();
 
 			SSocketPacket sSocketPacket = SSocketPacket.Parse(socketPacketBytes);

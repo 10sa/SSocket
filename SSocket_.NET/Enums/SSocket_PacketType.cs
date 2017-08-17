@@ -6,10 +6,11 @@ using System.Threading.Tasks;
 
 namespace SSocket.Enums
 {
-	public enum SSocket_PacketType
+	public enum SSocketPacketType
 	{
 		ServerHello		= 1,
 		ClientHello		= 2,
-		Data					= 3
+		Data					= 3,
+		Segmentation_Send = 4,
 	}
 }

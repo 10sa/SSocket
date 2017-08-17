@@ -9,7 +9,7 @@ namespace SSocket.Models
 	struct SSocketPacketModel
 	{
 		[MarshalAs(UnmanagedType.I4)]
-		public SSocket_PacketType PacketType;
+		public SSocketPacketType PacketType;
 
 		[MarshalAs(UnmanagedType.I8)]
 		public long DataSize;

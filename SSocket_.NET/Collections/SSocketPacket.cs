@@ -20,7 +20,7 @@ namespace SSocket.Collections
 			this.packet = packet;
 		}
 
-		public SSocketPacket(SSocket_PacketType packetType, long dataSize, long extraDataBit = 0)
+		public SSocketPacket(SSocketPacketType packetType, long dataSize, long extraDataBit = 0)
 		{
 			packet = new SSocketPacketModel();
 			packet.PacketType = packetType;
@@ -44,7 +44,7 @@ namespace SSocket.Collections
 				throw new ArgumentException("data length mismatched.");
 		}
 
-		public SSocket_PacketType GetPacketType()
+		public SSocketPacketType GetPacketType()
 		{
 			return packet.PacketType;
 		}

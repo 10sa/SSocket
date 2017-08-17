@@ -45,10 +45,10 @@ namespace SSocket.Net
 			try
 			{
 				socket.Connect(endpoint);
-				socket.Send(new SSocketPacket(SSocket_PacketType.ClientHello, PublicKey.LongLength).GetBytes());
+				socket.Send(new SSocketPacket(SSocketPacketType.ClientHello, PublicKey.LongLength).GetBytes());
 				socket.Send(PublicKey);
 
-				ReceiveHelloPacket(socket, SSocket_PacketType.ServerHello);
+				ReceiveHelloPacket(socket, SSocketPacketType.ServerHello);
 			}
 			catch (Exception) {
 				throw;
@@ -66,10 +66,10 @@ namespace SSocket.Net
 		public SSocket Accept()
 		{
 			Socket clientSocket = socket.Accept();
-			clientSocket.Send(new SSocketPacket(SSocket_PacketType.ServerHello, PublicKey.LongLength).GetBytes());
+			clientSocket.Send(new SSocketPacket(SSocketPacketType.ServerHello, PublicKey.LongLength).GetBytes());
 			clientSocket.Send(PublicKey);
 
-			ReceiveHelloPacket(clientSocket, SSocket_PacketType.ClientHello);
+			ReceiveHelloPacket(clientSocket, SSocketPacketType.ClientHello);
 			return new SSocket(ShareKey, clientSocket);
 		}
 
@@ -107,7 +107,7 @@ namespace SSocket.Net
 			{
 				byte[] buffer = new byte[IOBufferLength];
 				long leftFileSize = reader.BaseStream.Length;
-				socket.Send(new SSocketPacket(SSocket_PacketType.Data, leftFileSize).GetBytes());
+				socket.Send(new SSocketPacket(SSocketPacketType.Data, leftFileSize).GetBytes());
 
 				int readedSize;
 				do
@@ -193,7 +193,7 @@ namespace SSocket.Net
 			return helloPacket;
 		}
 
-		private void ReceiveHelloPacket(Socket socket, SSocket_PacketType helloType)
+		private void ReceiveHelloPacket(Socket socket, SSocketPacketType helloType)
 		{
 			try
 			{
@@ -211,7 +211,7 @@ namespace SSocket.Net
 			return string.Format("cache{0}{1}.cache", Environment.CurrentManagedThreadId, subPath);
 		}
 
-		private bool IsValidPacket(SSocketPacket packet, SSocket_PacketType type)
+		private bool IsValidPacket(SSocketPacket packet, SSocketPacketType type)
 		{
 			if (packet.GetPacketType() == type && packet.GetPacketDataSize() == PublicKey.LongLength)
 				return true;
