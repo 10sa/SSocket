@@ -15,16 +15,35 @@ using SSocket.Collections;
 
 namespace SSocket.Net
 {
+	/// <summary>
+	/// Implements the SSocket protocol socket interface.
+	/// </summary>
 	public sealed class SSocket
 	{
+		/// <summary>
+		/// Diff-Hellman Algorithms's public key.
+		/// </summary>
 		public byte[] PublicKey { get; private set; }
+
+		/// <summary>
+		/// Derived by Diff-Hellman share key.
+		/// </summary>
 		public byte[] ShareKey { get; private set; }
+
+		/// <summary>
+		/// Protocol 64bit option for additional data packets.
+		/// </summary>
 		public long ExtraDataBit { get; set; }
+
+		private const int IOBufferLength = 2048;
 
 		private ECDiffieHellmanCng keyExchanger = new ECDiffieHellmanCng();
 		private AESManager aesManager;
 		private Socket socket;
 
+		/// <summary>
+		/// Create new SSocket instance.
+		/// </summary>
 		public SSocket()
 		{
 			socket = new Socket(SocketType.Stream, ProtocolType.Tcp);
@@ -41,6 +60,10 @@ namespace SSocket.Net
 			aesManager = new AESManager(ShareKey);
 		}
 
+		/// <summary>
+		/// Attempt to connect using the SSocket protocol.
+		/// </summary>
+		/// <param name="endpoint">An EndPoint that represents the remote device.</param>
 		public void Connect(EndPoint endpoint)
 		{
 			try
@@ -56,6 +79,11 @@ namespace SSocket.Net
 			}
 		}
 
+		/// <summary>
+		/// Associates a Socket with a local endpoint and places a socket in a listening state.
+		/// </summary>
+		/// <param name="endpoint">The local EndPoint to associate with the Socket.</param>
+		/// <param name="backlog">The maximum length of the pending connections queue. if value is 0, not set listening state.</param>
 		public void Bind(EndPoint endpoint, int backlog)
 		{
 			socket.Bind(endpoint);
@@ -64,6 +92,10 @@ namespace SSocket.Net
 				socket.Listen(backlog);
 		}
 
+		/// <summary>
+		/// Creates a new SSocket for a newly created connection.
+		/// </summary>
+		/// <returns>A SSocket for a newly created connection.</returns>
 		public SSocket Accept()
 		{
 			Socket clientSocket = socket.Accept();
@@ -74,11 +106,13 @@ namespace SSocket.Net
 			return new SSocket(ShareKey, clientSocket);
 		}
 
-		private const int IOBufferLength = 2048;
-
 		#region Encrypt Send Part
 		private CryptoStream encryptCryptoStream;
 
+		/// <summary>
+		/// Begin SSocket protocol sending progress.
+		/// </summary>
+		/// <returns>The stream that stores the data to be sent.</returns>
 		public CryptoStream BeginSend()
 		{
 			if (encryptCryptoStream == null)
@@ -90,6 +124,12 @@ namespace SSocket.Net
 				throw new InvalidOperationException("Already initalized..");
 		}
 
+		/// <summary>
+		/// Writes a sequence of bytes to the current data store stream and advances the current position within the stream by the number of bytes written.
+		/// </summary>
+		/// <param name="buffer">An array of bytes. This method copies count bytes from buffer to the current stream.</param>
+		/// <param name="offset">The byte offset in buffer at which to begin copying bytes to the current stream.</param>
+		/// <param name="length">The number of bytes to be written to the current stream.</param>
 		public void StackData(byte[] buffer, int offset, int length)
 		{
 			if (encryptCryptoStream != null)
@@ -98,6 +138,9 @@ namespace SSocket.Net
 				throw new InvalidOperationException("Not initalized.");
 		}
 
+		/// <summary>
+		/// Sends data written to internal storage to the associated Socket using the specified ExtraDataBit.
+		/// </summary>
 		public void Send()
 		{
 			encryptCryptoStream.FlushFinalBlock();
@@ -108,7 +151,7 @@ namespace SSocket.Net
 			{
 				byte[] buffer = new byte[IOBufferLength];
 				long leftFileSize = reader.BaseStream.Length;
-				socket.Send(new SSocketPacket(SSocketPacketType.Data, leftFileSize).GetBytes());
+				socket.Send(new SSocketPacket(SSocketPacketType.Data, leftFileSize, ExtraDataBit).GetBytes());
 
 				int readedSize;
 				do
@@ -136,7 +179,7 @@ namespace SSocket.Net
 
 			byte[] encryptedData = memoryStream.ToArray();
 
-			socket.Send(new SSocketPacket(SSocketPacketType.Data, encryptedData.Length).GetBytes());
+			socket.Send(new SSocketPacket(SSocketPacketType.Data, encryptedData.Length, ExtraDataBit).GetBytes());
 			socket.Send(encryptedData, encryptedData.Length, SocketFlags.None);
 
 			cryptoStream.Dispose();
@@ -191,11 +234,20 @@ namespace SSocket.Net
 		}
 		#endregion
 
+		/// <summary>
+		/// Closes the socket connection and allows reuse of the socket.
+		/// </summary>
+		/// <param name="reuseSocket">true if this socket can be reused after the current connection is closed; otherwise, false.</param>
 		public void Disconnect(bool reuseSocket)
 		{
 			socket.Disconnect(reuseSocket);
 		}
 
+		/// <summary>
+		/// Receive from socket to SSocket packet.
+		/// </summary>
+		/// <returns>Received SSocket packet.</returns>
+		/// <exception cref="ArgumentException">Received wrong data from socket.</exception>
 		public SSocketPacket ReceivePacket()
 		{
 			byte[] buffer = new byte[SSocketPacket.GetPacketSize()];
@@ -205,7 +257,7 @@ namespace SSocket.Net
 			return helloPacket;
 		}
 
-		private SSocketPacket ReceivePacket(Socket socket)
+		private static SSocketPacket ReceivePacket(Socket socket)
 		{
 			byte[] buffer = new byte[SSocketPacket.GetPacketSize()];
 			ReceiveFromSocket(socket, buffer.Length, buffer);
@@ -227,6 +279,7 @@ namespace SSocket.Net
 				throw new InvalidOperationException("Client is not used ssocket.");
 			}
 		}
+
 		private string GetCacheFilePath(string subPath = "")
 		{
 			return string.Format("cache{0}{1}.cache", Environment.CurrentManagedThreadId, subPath);
@@ -249,7 +302,7 @@ namespace SSocket.Net
 			aesManager = new AESManager(ShareKey);
 		}
 
-		private void  ReceiveFromSocket(Socket socket, int size, byte[] buffer)
+		private static void ReceiveFromSocket(Socket socket, int size, byte[] buffer)
 		{
 			int receivedSize = 0;
 			do

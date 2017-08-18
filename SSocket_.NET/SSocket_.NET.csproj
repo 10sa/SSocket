@@ -59,6 +59,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Collections\SSocketPacket.cs" />
+    <Compile Include="Enums\SSocketExtraDataBit.cs" />
     <Compile Include="Enums\SSocketPacketType.cs" />
     <Compile Include="Security\AESManager.cs" />
     <Compile Include="Models\SSocketPacketModel.cs" />
