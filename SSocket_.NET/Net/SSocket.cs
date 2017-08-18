@@ -22,6 +22,9 @@ namespace SSocket.Net
 		private ECDiffieHellmanCng keyExchanger = new ECDiffieHellmanCng();
 		private AESManager aesManager;
 		private Socket socket;
+
+		private long dataSize;
+		private bool isSegmentation = false;
 		#endregion
 
 		#region Public Propertys
@@ -38,7 +41,12 @@ namespace SSocket.Net
 		/// <summary>
 		/// Protocol 64bit option for additional data packets.
 		/// </summary>
-		public long ExtraDataBit { get; set; }
+		public long ExtraDataBit  { get; private set; }
+
+		/// <summary>
+		/// Limits the maximum size of packet data.If data larger than this size is input, it is divided and transmitted. If 0, there is no limit.
+		/// </summary>
+		public long PacketMaxSize { get; set; }
 		#endregion
 
 		#region Constructors
@@ -135,7 +143,7 @@ namespace SSocket.Net
 		public void RemoveExtraDataBit(params long[] edb)
 		{
 			foreach (var dataBit in edb)
-				ExtraDataBit = ExtraDataBit ^ dataBit;
+				ExtraDataBit = ExtraDataBit & ~dataBit;
 		}
 
 		/// <summary>
@@ -151,20 +159,40 @@ namespace SSocket.Net
 			SSocketPacket helloPacket = SSocketPacket.Parse(buffer);
 			return helloPacket;
 		}
+
+		public void Import(SSocketPacket packet)
+		{
+			ExtraDataBit = packet.GetPacketExtraDataBit();
+			dataSize = packet.GetPacketDataSize();
+			isSegmentation = packet.HasExtraDataBit(SSocketExtraDataBit.StartSegmentation);
+		}
 		#endregion
 
 		#region Encrypt Send Part
 		private CryptoStream encryptCryptoStream;
+		private long stackedDataSize;
 
 		/// <summary>
 		/// Begin SSocket protocol sending progress.
 		/// </summary>
 		/// <returns>The stream that stores the data to be sent.</returns>
-		public CryptoStream BeginSend()
+		public CryptoStream BeginSend(long dataSize)
 		{
 			if (encryptCryptoStream == null)
 			{
 				encryptCryptoStream = aesManager.CreateEncryptStream(File.Create(GetCacheFilePath("Send"), 2048, FileOptions.None));
+				this.dataSize = dataSize;
+
+				if ((ExtraDataBit & (long)SSocketExtraDataBit.StartSegmentation) > 0)
+				{
+					SendPacket(SSocketPacketType.Data);
+
+					SetExtraDataBit((long)SSocketExtraDataBit.SegmentPacket);
+					RemoveExtraDataBit((long)SSocketExtraDataBit.StartSegmentation);
+
+					stackedDataSize = 0;
+				}
+
 				return encryptCryptoStream;
 			}
 			else
@@ -180,7 +208,24 @@ namespace SSocket.Net
 		public void StackData(byte[] buffer, int offset, int length)
 		{
 			if (encryptCryptoStream != null)
-				encryptCryptoStream.Write(buffer, offset, length);
+			{
+				if (stackedDataSize + length <= PacketMaxSize)
+				{
+					encryptCryptoStream.Write(buffer, offset, length);
+					stackedDataSize += length;
+				}
+				else
+				{
+					int writeLength = (int)(length + stackedDataSize - PacketMaxSize);
+					int rewriteLength = length - writeLength;
+
+					encryptCryptoStream.Write(buffer, offset, writeLength);
+					Send();
+
+					BeginSend(dataSize);
+					encryptCryptoStream.Write(buffer, writeLength, rewriteLength);
+				}
+			}
 			else
 				throw new InvalidOperationException("Not initalized.");
 		}
@@ -214,7 +259,7 @@ namespace SSocket.Net
 		}
 
 		/// <summary>
-		/// Send a data to byte array, this method does not guarantee stability for large data.
+		/// Send a data to byte array, this method does not guarantee stability for large data and not support segmentation send.
 		/// </summary>
 		/// <param name="buffer">Data.to send.</param>
 		public void Send(byte[] buffer, int length)
@@ -226,7 +271,7 @@ namespace SSocket.Net
 
 			byte[] encryptedData = memoryStream.ToArray();
 
-			socket.Send(new SSocketPacket(SSocketPacketType.Data, encryptedData.Length, ExtraDataBit).GetBytes());
+			socket.Send(new SSocketPacket(SSocketPacketType.Data, encryptedData.Length, ExtraDataBit & ~(long)SSocketExtraDataBit.StartSegmentation).GetBytes());
 			socket.Send(encryptedData, encryptedData.Length, SocketFlags.None);
 
 			cryptoStream.Dispose();
@@ -239,14 +284,52 @@ namespace SSocket.Net
 
 		public void BeginReceive()
 		{
-			decryptingCacheStream = File.Create(GetCacheFilePath("EncryptedReceive"), IOBufferLength, FileOptions.DeleteOnClose);
+			if (decryptingCacheStream == null)
+				decryptingCacheStream = File.Create(GetCacheFilePath("EncryptedReceive"), IOBufferLength, FileOptions.DeleteOnClose);
+			else
+				throw new InvalidOperationException("Already Initalized.");
 		}
 
 		public BinaryReader Receive(long dataSize)
 		{
-			ReceiveEncryptedData(dataSize);
+			if (decryptingCacheStream != null)
+			{
+				FileStream decryptCacheStream = File.Create(GetCacheFilePath("DencryptedReceive"), 2048, FileOptions.DeleteOnClose);
 
-			FileStream decryptCacheStream = File.Create(GetCacheFilePath("DencryptedReceive"), 2048, FileOptions.DeleteOnClose);
+				if (isSegmentation)
+				{
+					long readedDataSize = 0;
+					do
+					{
+						SSocketPacket segment = ReceivePacket();
+						if (segment.HasExtraDataBit(SSocketExtraDataBit.SegmentPacket))
+							ReceiveEncryptedBytes(segment.GetPacketDataSize());
+						else
+							throw new SecurityException("Received wrong packet.");
+
+						readedDataSize += DecryptCryptoStreamData(decryptCacheStream, segment.GetPacketDataSize());
+						BeginReceive();
+					}
+					while (readedDataSize < dataSize);
+				}
+				else
+				{
+					ReceiveEncryptedBytes(dataSize);
+					DecryptCryptoStreamData(decryptCacheStream, dataSize);
+				}
+
+				decryptCacheStream.Position = 0;
+				return new BinaryReader(decryptCacheStream);
+			}
+			else
+				throw new InvalidOperationException("Not initalized.");
+		}
+
+		private int DecryptCryptoStreamData(FileStream decryptCacheStream, long dataSize)
+		{
+			this.dataSize = dataSize;
+			int decryptedSize = 0;
+
 			BinaryWriter decryptDataStream = new BinaryWriter(decryptCacheStream);
 			using (CryptoStream decryptingCryptoStream = aesManager.CreateDecryptStream(decryptingCacheStream))
 			{
@@ -254,15 +337,19 @@ namespace SSocket.Net
 				int readedSize;
 
 				while ((readedSize = decryptingCryptoStream.Read(IOBuffer, 0, IOBuffer.Length)) > 0)
+				{
 					decryptDataStream.Write(IOBuffer, 0, readedSize);
+					decryptedSize += readedSize;
+				}
 			}
 
 			decryptingCacheStream.Dispose();
-			decryptCacheStream.Position = 0;
-			return new BinaryReader(decryptCacheStream);
+			decryptingCacheStream = null;
+
+			return decryptedSize;
 		}
 
-		private void ReceiveEncryptedData(long dataSize)
+		private void ReceiveEncryptedBytes(long dataSize)
 		{
 			byte[] IOBuffer = new byte[IOBufferLength];
 
@@ -270,24 +357,27 @@ namespace SSocket.Net
 			long leftDataSize = dataSize;
 			do
 			{
-				readedSize = socket.Receive(IOBuffer, dataSize > int.MaxValue ? int.MaxValue : (int)dataSize, SocketFlags.None);
+				readedSize = socket.Receive(IOBuffer, Math.Min(dataSize > int.MaxValue ? int.MaxValue : (int)dataSize, IOBuffer.Length), SocketFlags.None);
 				decryptingCacheStream.Write(IOBuffer, 0, readedSize);
 
 				leftDataSize -= readedSize;
 			}
 			while (leftDataSize > 0);
-			decryptingCacheStream.Flush();
 			decryptingCacheStream.Position = 0;
 		}
 		#endregion
 
 		#region Private methods.
-		private static SSocketPacket ReceivePacket(Socket socket)
+		private SSocketPacket ReceivePacket(Socket socket)
 		{
 			byte[] buffer = new byte[SSocketPacket.GetPacketSize()];
 			ReceiveFromSocket(socket, buffer.Length, buffer);
 
 			SSocketPacket helloPacket = SSocketPacket.Parse(buffer);
+
+			if ((helloPacket.GetPacketExtraDataBit() & (long)SSocketExtraDataBit.StartSegmentation) > 0)
+				isSegmentation = true;
+
 			return helloPacket;
 		}
 
@@ -303,6 +393,16 @@ namespace SSocket.Net
 			{
 				throw new InvalidOperationException("Client is not used ssocket.");
 			}
+		}
+
+		private void SendPacket(Socket socket, SSocketPacketType type)
+		{
+			socket.Send(new SSocketPacket(type, dataSize, ExtraDataBit).GetBytes());
+		}
+
+		private void SendPacket(SSocketPacketType type)
+		{
+			socket.Send(new SSocketPacket(type, dataSize, ExtraDataBit).GetBytes());
 		}
 
 		private string GetCacheFilePath(string subPath = "")

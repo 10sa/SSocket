@@ -5,6 +5,9 @@ using SSocket.Enums;
 
 namespace SSocket.Collections
 {
+	/// <summary>
+	/// A collection that implements SSocket protocol packets.
+	/// </summary>
 	public class SSocketPacket
 	{
 		private SSocketPacketModel packet;
@@ -93,6 +96,16 @@ namespace SSocket.Collections
 		public static int GetPacketSize()
 		{
 			return Marshal.SizeOf(typeof(SSocketPacketModel));
+		}
+
+		public bool HasExtraDataBit(SSocketExtraDataBit edb)
+		{
+			return (packet.ExtraDataBit & (long)edb) > 0 ? true : false;
+		}
+
+		public bool HasExtraDataBit(long edb)
+		{
+			return (packet.ExtraDataBit & edb) > 0 ? true : false;
 		}
 	}
 }

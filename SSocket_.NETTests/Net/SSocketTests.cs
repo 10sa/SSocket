@@ -7,6 +7,7 @@ using System.Text;
 using System.Threading;
 using System.IO;
 using System.Net;
+using System.Security;
 
 using SSocket.Collections;
 using SSocket.Enums;
@@ -17,6 +18,7 @@ namespace SSocket.Net.Tests
 	public class SSocketTests
 	{
 		private const string TestMessage = "TEST MESSAGE!";
+		private readonly byte[] TestData = new byte[128];
 
 		[TestMethod()]
 		public void SendTest()
@@ -29,11 +31,13 @@ namespace SSocket.Net.Tests
 
 			SSocket clientSocket = serverSocket.Accept();
 			SSocketPacket packet = clientSocket.ReceivePacket();
-			clientSocket.BeginReceive();
+			clientSocket.Import(packet);
 
+			clientSocket.BeginReceive();
 			using (BinaryReader reader = clientSocket.Receive(packet.GetPacketDataSize()))
 			{
-				Assert.IsTrue(string.Equals(TestMessage, Encoding.UTF8.GetString(reader.ReadBytes((int)packet.GetPacketDataSize()))));
+				byte[] readedData = reader.ReadBytes(TestData.Length);
+				Assert.IsTrue(readedData.SequenceEqual(TestData));
 			}
 		}
 
@@ -42,17 +46,15 @@ namespace SSocket.Net.Tests
 			SSocket clientSocket = new SSocket();
 			clientSocket.Connect(new IPEndPoint(IPAddress.Loopback, 45050));
 
-			byte[] messange = Encoding.UTF8.GetBytes(TestMessage);
-			clientSocket.Send(messange, messange.Length);
+			clientSocket.Send(TestData, TestData.Length);
 		}
 
 		[TestMethod()]
 		public void RemoveExtraDataBitTest()
 		{
 			SSocket socket = new SSocket();
-			socket.SetExtraDataBit((long)SSocketExtraDataBit.SegmentPacket);
-			socket.RemoveExtraDataBit((long)SSocketExtraDataBit.SegmentPacket);
-
+			socket.SetExtraDataBit((long)SSocketExtraDataBit.StartSegmentation);
+			socket.RemoveExtraDataBit((long)SSocketExtraDataBit.StartSegmentation);
 			Assert.AreEqual(socket.ExtraDataBit, 0);
 		}
 	}
