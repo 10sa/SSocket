@@ -149,7 +149,7 @@ namespace SSocket.Net
 			encryptCryptoStream.Dispose();
 
 			encryptCryptoStream = null;
-			using (BinaryReader reader = new BinaryReader(File.Open(GetCacheFilePath("send"), FileMode.Open)))
+			using (BinaryReader reader = new BinaryReader(File.Open(GetCacheFilePath("Send"), FileMode.Open)))
 			{
 				byte[] buffer = new byte[IOBufferLength];
 				long leftFileSize = reader.BaseStream.Length;
@@ -165,7 +165,7 @@ namespace SSocket.Net
 				while (leftFileSize > 0);
 			}
 
-			File.Delete(GetCacheFilePath("send"));
+			File.Delete(GetCacheFilePath("Send"));
 		}
 
 		/// <summary>
@@ -194,14 +194,14 @@ namespace SSocket.Net
 
 		public void BeginReceive()
 		{
-			decryptingCacheStream = File.Create(GetCacheFilePath("EncryptedReceive"), IOBufferLength, FileOptions.None);
+			decryptingCacheStream = File.Create(GetCacheFilePath("EncryptedReceive"), IOBufferLength, FileOptions.DeleteOnClose);
 		}
 
 		public BinaryReader Receive(long dataSize)
 		{
 			ReceiveEncryptedData(dataSize);
 
-			FileStream decryptCacheStream = File.Create("DencryptedReceive", 2048, FileOptions.DeleteOnClose);
+			FileStream decryptCacheStream = File.Create(GetCacheFilePath("DencryptedReceive"), 2048, FileOptions.DeleteOnClose);
 			BinaryWriter decryptDataStream = new BinaryWriter(decryptCacheStream);
 			using (CryptoStream decryptingCryptoStream = aesManager.CreateDecryptStream(decryptingCacheStream))
 			{
