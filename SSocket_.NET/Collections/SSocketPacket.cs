@@ -61,7 +61,7 @@ namespace SSocket.Collections
 
 		public byte[] GetBytes()
 		{
-			int packetSize = GetPacketSize();
+			int packetSize = GetStructureSze(packet);
 			byte[] bytes = new byte[packetSize];
 
 			IntPtr classPtr = Marshal.AllocHGlobal(packetSize);
@@ -70,6 +70,11 @@ namespace SSocket.Collections
 			Marshal.FreeHGlobal(classPtr);
 
 			return bytes;
+		}
+
+		private int GetStructureSze(SSocketPacketModel packet)
+		{
+			return Marshal.SizeOf(packet);
 		}
 
 		public static int GetPacketSize()

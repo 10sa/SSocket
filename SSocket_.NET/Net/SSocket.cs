@@ -19,6 +19,7 @@ namespace SSocket.Net
 	{
 		public byte[] PublicKey { get; private set; }
 		public byte[] ShareKey { get; private set; }
+		public long ExtraDataBit { get; set; }
 
 		private ECDiffieHellmanCng keyExchanger = new ECDiffieHellmanCng();
 		private AESManager aesManager;
@@ -120,6 +121,26 @@ namespace SSocket.Net
 			}
 
 			File.Delete(GetCacheFilePath("send"));
+		}
+
+		/// <summary>
+		/// Send a data to byte array, this method does not guarantee stability for large data.
+		/// </summary>
+		/// <param name="buffer">Data.to send.</param>
+		public void Send(byte[] buffer, int length)
+		{
+			MemoryStream memoryStream = new MemoryStream();
+			CryptoStream cryptoStream = aesManager.CreateEncryptStream(memoryStream);
+			cryptoStream.Write(buffer, 0, buffer.Length);
+			cryptoStream.FlushFinalBlock();
+
+			byte[] encryptedData = memoryStream.ToArray();
+
+			socket.Send(new SSocketPacket(SSocketPacketType.Data, encryptedData.Length).GetBytes());
+			socket.Send(encryptedData, encryptedData.Length, SocketFlags.None);
+
+			cryptoStream.Dispose();
+			memoryStream.Dispose();
 		}
 		#endregion
 

@@ -5,7 +5,7 @@ using SSocket.Enums;
 
 namespace SSocket.Models
 {
-	[StructLayout(LayoutKind.Sequential, Pack = 0)]
+	[StructLayout(LayoutKind.Sequential, Pack =1)]
 	struct SSocketPacketModel
 	{
 		[MarshalAs(UnmanagedType.I4)]

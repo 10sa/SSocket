@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace SSocket.Enums
 {
-	public enum SSocketPacketType
+	public enum SSocketPacketType : int
 	{
 		ServerHello		= 1,
 		ClientHello		= 2,
