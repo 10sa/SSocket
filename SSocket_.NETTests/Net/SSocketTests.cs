@@ -5,12 +5,11 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading;
-
 using System.IO;
-
 using System.Net;
 
 using SSocket.Collections;
+using SSocket.Enums;
 
 namespace SSocket.Net.Tests
 {
@@ -45,6 +44,16 @@ namespace SSocket.Net.Tests
 
 			byte[] messange = Encoding.UTF8.GetBytes(TestMessage);
 			clientSocket.Send(messange, messange.Length);
+		}
+
+		[TestMethod()]
+		public void RemoveExtraDataBitTest()
+		{
+			SSocket socket = new SSocket();
+			socket.SetExtraDataBit((long)SSocketExtraDataBit.SegmentPacket);
+			socket.RemoveExtraDataBit((long)SSocketExtraDataBit.SegmentPacket);
+
+			Assert.AreEqual(socket.ExtraDataBit, 0);
 		}
 	}
 }

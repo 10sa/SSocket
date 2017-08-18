@@ -12,7 +12,7 @@ using SSocket.Collections;
 namespace SSocket.Net
 {
 	/// <summary>
-	/// Implements the SSocket protocol socket interface.
+	/// Implements the SSocket protocol socket interface. This class cannot be inherited.
 	/// </summary>
 	public sealed class SSocket
 	{
@@ -62,6 +62,7 @@ namespace SSocket.Net
 		}
 		#endregion
 
+		#region Public methods
 		/// <summary>
 		/// Attempt to connect using the SSocket protocol.
 		/// </summary>
@@ -107,6 +108,50 @@ namespace SSocket.Net
 			ReceiveHelloPacket(clientSocket, SSocketPacketType.ClientHello);
 			return new SSocket(ShareKey, clientSocket);
 		}
+
+		/// <summary>
+		/// Closes the socket connection and allows reuse of the socket.
+		/// </summary>
+		/// <param name="reuseSocket">true if this socket can be reused after the current connection is closed; otherwise, false.</param>
+		public void Disconnect(bool reuseSocket)
+		{
+			socket.Disconnect(reuseSocket);
+		}
+
+		/// <summary>
+		/// Sets the EDB (Extra Data Bit) of the SSocket EDB property.
+		/// </summary>
+		/// <param name="edb">The EDB value to set.</param>
+		public void SetExtraDataBit(params long[] edb)
+		{
+			foreach (var dataBit in edb)
+				ExtraDataBit = ExtraDataBit | dataBit;
+		}
+
+		/// <summary>
+		/// Removes the EDB (Extra Data Bit) of the SSocket EDB property.
+		/// </summary>
+		/// <param name="edb"></param>
+		public void RemoveExtraDataBit(params long[] edb)
+		{
+			foreach (var dataBit in edb)
+				ExtraDataBit = ExtraDataBit ^ dataBit;
+		}
+
+		/// <summary>
+		/// Receive from socket to SSocket packet.
+		/// </summary>
+		/// <returns>Received SSocket packet.</returns>
+		/// <exception cref="ArgumentException">Received wrong data from socket.</exception>
+		public SSocketPacket ReceivePacket()
+		{
+			byte[] buffer = new byte[SSocketPacket.GetPacketSize()];
+			ReceiveFromSocket(socket, buffer.Length, buffer);
+
+			SSocketPacket helloPacket = SSocketPacket.Parse(buffer);
+			return helloPacket;
+		}
+		#endregion
 
 		#region Encrypt Send Part
 		private CryptoStream encryptCryptoStream;
@@ -235,29 +280,6 @@ namespace SSocket.Net
 			decryptingCacheStream.Position = 0;
 		}
 		#endregion
-
-		/// <summary>
-		/// Closes the socket connection and allows reuse of the socket.
-		/// </summary>
-		/// <param name="reuseSocket">true if this socket can be reused after the current connection is closed; otherwise, false.</param>
-		public void Disconnect(bool reuseSocket)
-		{
-			socket.Disconnect(reuseSocket);
-		}
-
-		/// <summary>
-		/// Receive from socket to SSocket packet.
-		/// </summary>
-		/// <returns>Received SSocket packet.</returns>
-		/// <exception cref="ArgumentException">Received wrong data from socket.</exception>
-		public SSocketPacket ReceivePacket()
-		{
-			byte[] buffer = new byte[SSocketPacket.GetPacketSize()];
-			ReceiveFromSocket(socket, buffer.Length, buffer);
-
-			SSocketPacket helloPacket = SSocketPacket.Parse(buffer);
-			return helloPacket;
-		}
 
 		#region Private methods.
 		private static SSocketPacket ReceivePacket(Socket socket)
