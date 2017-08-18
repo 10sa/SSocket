@@ -173,7 +173,7 @@ namespace SSocket.Net
 		private long stackedDataSize;
 
 		/// <summary>
-		/// Begin SSocket protocol sending progress.
+		/// Start sending SSocket protocol.
 		/// </summary>
 		/// <returns>The stream that stores the data to be sent.</returns>
 		public CryptoStream BeginSend(long dataSize)
@@ -183,7 +183,7 @@ namespace SSocket.Net
 				encryptCryptoStream = aesManager.CreateEncryptStream(File.Create(GetCacheFilePath("Send"), 2048, FileOptions.None));
 				this.dataSize = dataSize;
 
-				if ((ExtraDataBit & (long)SSocketExtraDataBit.StartSegmentation) > 0)
+				if (HasExtraDataBit(SSocketExtraDataBit.StartSegmentation))
 				{
 					SendPacket(SSocketPacketType.Data);
 
@@ -282,6 +282,9 @@ namespace SSocket.Net
 		#region Decrypt Receive Part
 		private FileStream decryptingCacheStream;
 
+		/// <summary>
+		/// Start receiving SSocket protocol.
+		/// </summary>
 		public void BeginReceive()
 		{
 			if (decryptingCacheStream == null)
@@ -290,6 +293,11 @@ namespace SSocket.Net
 				throw new InvalidOperationException("Already Initalized.");
 		}
 
+		/// <summary>
+		/// It receives and decrypts the encrypted data using the given encrypted data size, writes it to the stream.
+		/// </summary>
+		/// <param name="dataSize">Data to size.</param>
+		/// <returns>The stream in which the data was written.</returns>
 		public BinaryReader Receive(long dataSize)
 		{
 			if (decryptingCacheStream != null)
@@ -433,6 +441,11 @@ namespace SSocket.Net
 			do
 				receivedSize += socket.Receive(buffer, (int)receivedSize, size - receivedSize, SocketFlags.None);
 			while (receivedSize < size);
+		}
+
+		private bool HasExtraDataBit(SSocketExtraDataBit edb)
+		{
+			return (ExtraDataBit & (long)edb) > 0 ? true : false;
 		}
 		#endregion
 	}
