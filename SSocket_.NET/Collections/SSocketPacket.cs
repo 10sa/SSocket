@@ -12,7 +12,7 @@ namespace SSocket.Collections
 {
 	public class SSocketPacket
 	{
-		SSocketPacketModel packet;
+		private SSocketPacketModel packet;
 		protected SSocketPacket() { }
 
 		private SSocketPacket(SSocketPacketModel packet)
@@ -20,6 +20,12 @@ namespace SSocket.Collections
 			this.packet = packet;
 		}
 
+		/// <summary>
+		/// Create new SSocketPacket instance.
+		/// </summary>
+		/// <param name="packetType">Packet type to send.</param>
+		/// <param name="dataSize">Size of data to send.</param>
+		/// <param name="extraDataBit">EDB to send.</param>
 		public SSocketPacket(SSocketPacketType packetType, long dataSize, long extraDataBit = 0)
 		{
 			packet = new SSocketPacketModel();
@@ -28,6 +34,11 @@ namespace SSocket.Collections
 			packet.ExtraDataBit = extraDataBit;
 		}
 
+		/// <summary>
+		/// Parse from byte array to SSocketPacket.
+		/// </summary>
+		/// <param name="data">Byte Data to parse</param>
+		/// <returns></returns>
 		public static SSocketPacket Parse(byte[] data)
 		{
 			if (data.Length == GetPacketSize())
@@ -44,39 +55,46 @@ namespace SSocket.Collections
 				throw new ArgumentException("data length mismatched.");
 		}
 
+		/// <summary>
+		/// Get Setted Packet of type.
+		/// </summary>
+		/// <returns>Setted packet of type.</returns>
 		public SSocketPacketType GetPacketType()
 		{
 			return packet.PacketType;
 		}
 
+		/// <summary>
+		/// Get Setted Packet of Data Size.
+		/// </summary>
+		/// <returns>Setted packet of data size.</returns>
 		public long GetPacketDataSize()
 		{
 			return packet.DataSize;
 		}
 
+		/// <summary>
+		/// Get Setted Packet of EDB.
+		/// </summary>
+		/// <returns>Setted Packet of EDB.</returns>
 		public long GetPacketExtraDataBit()
 		{
 			return packet.ExtraDataBit;
 		}
 
+		/// <summary>
+		///  Gets binary bytes of packet.
+		/// </summary>
+		/// <returns>Binary bytes of packet.</returns>
 		public byte[] GetBytes()
 		{
-			int packetSize = GetStructureSze(packet);
-			byte[] bytes = new byte[packetSize];
-
-			IntPtr classPtr = Marshal.AllocHGlobal(packetSize);
-			Marshal.StructureToPtr(packet, classPtr, true);
-			Marshal.Copy(classPtr, bytes, 0, bytes.Length);
-			Marshal.FreeHGlobal(classPtr);
-
-			return bytes;
+			return Utils.StructureToBytes(packet);
 		}
 
-		private int GetStructureSze(SSocketPacketModel packet)
-		{
-			return Marshal.SizeOf(packet);
-		}
-
+		/// <summary>
+		/// Get packet of binary size.
+		/// </summary>
+		/// <returns>Binary size of packet.</returns>
 		public static int GetPacketSize()
 		{
 			return Marshal.SizeOf(typeof(SSocketPacketModel));

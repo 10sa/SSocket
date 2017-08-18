@@ -20,6 +20,15 @@ namespace SSocket.Net
 	/// </summary>
 	public sealed class SSocket
 	{
+		#region Private variables
+		private const int IOBufferLength = 2048;
+
+		private ECDiffieHellmanCng keyExchanger = new ECDiffieHellmanCng();
+		private AESManager aesManager;
+		private Socket socket;
+		#endregion
+
+		#region Public Propertys
 		/// <summary>
 		/// Diff-Hellman Algorithms's public key.
 		/// </summary>
@@ -34,13 +43,9 @@ namespace SSocket.Net
 		/// Protocol 64bit option for additional data packets.
 		/// </summary>
 		public long ExtraDataBit { get; set; }
+		#endregion
 
-		private const int IOBufferLength = 2048;
-
-		private ECDiffieHellmanCng keyExchanger = new ECDiffieHellmanCng();
-		private AESManager aesManager;
-		private Socket socket;
-
+		#region Constructors
 		/// <summary>
 		/// Create new SSocket instance.
 		/// </summary>
@@ -59,6 +64,7 @@ namespace SSocket.Net
 
 			aesManager = new AESManager(ShareKey);
 		}
+		#endregion
 
 		/// <summary>
 		/// Attempt to connect using the SSocket protocol.
@@ -257,6 +263,7 @@ namespace SSocket.Net
 			return helloPacket;
 		}
 
+		#region Private methods.
 		private static SSocketPacket ReceivePacket(Socket socket)
 		{
 			byte[] buffer = new byte[SSocketPacket.GetPacketSize()];
@@ -309,5 +316,6 @@ namespace SSocket.Net
 				receivedSize += socket.Receive(buffer, (int)receivedSize, size - receivedSize, SocketFlags.None);
 			while (receivedSize < size);
 		}
+		#endregion
 	}
 }
