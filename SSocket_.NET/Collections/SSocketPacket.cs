@@ -98,11 +98,21 @@ namespace SSocket.Collections
 			return Marshal.SizeOf(typeof(SSocketPacketModel));
 		}
 
+		/// <summary>
+		/// Returns whether the EDB has a specific value.
+		/// </summary>
+		/// <param name="edb">Specific EDB value.</param>
+		/// <returns>if has specific EDB value, Otherwise return false.</returns>
 		public bool HasExtraDataBit(SSocketExtraDataBit edb)
 		{
 			return (packet.ExtraDataBit & (long)edb) > 0 ? true : false;
 		}
 
+		/// <summary>
+		/// Returns whether the EDB has a specific value.
+		/// </summary>
+		/// <param name="edb">Specific EDB value.</param>
+		/// <returns>if has specific EDB value, Otherwise return false.</returns>
 		public bool HasExtraDataBit(long edb)
 		{
 			return (packet.ExtraDataBit & edb) > 0 ? true : false;

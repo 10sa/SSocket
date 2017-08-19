@@ -23,11 +23,10 @@ namespace SSocket.Net.Tests
 		[TestMethod()]
 		public void SendTest()
 		{
-			Thread clientThread = new Thread(new ThreadStart(ClientThread));
-			clientThread.Start();
-
 			SSocket serverSocket = new SSocket();
 			serverSocket.Bind(new IPEndPoint(IPAddress.Any, 45050), 5);
+
+			RunClientThread();
 
 			SSocket clientSocket = serverSocket.Accept();
 			SSocketPacket packet = clientSocket.ReceivePacket();
@@ -39,6 +38,12 @@ namespace SSocket.Net.Tests
 				byte[] readedData = reader.ReadBytes(TestData.Length);
 				Assert.IsTrue(readedData.SequenceEqual(TestData));
 			}
+		}
+
+		private void RunClientThread()
+		{
+			Thread clientThread = new Thread(ClientThread);
+			clientThread.Start();
 		}
 
 		private void ClientThread()
