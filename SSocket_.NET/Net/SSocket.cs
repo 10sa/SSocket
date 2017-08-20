@@ -165,6 +165,11 @@ namespace SSocketLib.Net
 			receiveDataSize = packet.GetPacketDataSize();
 			isSegmentation = packet.HasExtraDataBit(SSocketExtraDataBit.StartSegmentation);
 		}
+
+		public EndPoint GetRemoteEndPoint()
+		{
+			return socket.RemoteEndPoint;
+		}
 		#endregion
 
 		#region Encrypt Send Part
