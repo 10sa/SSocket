@@ -26,10 +26,18 @@ namespace SSocket.Collections
 		/// <param name="extraDataBit">EDB to send.</param>
 		public SSocketPacket(SSocketPacketType packetType, long dataSize, long extraDataBit = 0)
 		{
-			packet = new SSocketPacketModel();
-			packet.PacketType = packetType;
-			packet.DataSize = dataSize;
-			packet.ExtraDataBit = extraDataBit;
+			SetPacketData(packetType, dataSize, extraDataBit);
+		}
+
+		/// <summary>
+		/// Create new SSocketPacket instance.
+		/// </summary>
+		/// <param name="packetType">Packet type to send.</param>
+		/// <param name="dataSize">Size of data to send.</param>
+		/// <param name="extraDataBit">EDB to send.</param>
+		public SSocketPacket(long packetType, long dataSize, long extraDataBit = 0)
+		{
+			SetPacketData((SSocketPacketType)Enum.Parse(typeof(SSocketPacketType), packetType.ToString()), dataSize, extraDataBit);
 		}
 
 		/// <summary>
@@ -116,6 +124,16 @@ namespace SSocket.Collections
 		public bool HasExtraDataBit(long edb)
 		{
 			return (packet.ExtraDataBit & edb) > 0 ? true : false;
+		}
+
+		private void SetPacketData(SSocketPacketType packetType, long dataSize, long extraDataBit)
+		{
+			packet = new SSocketPacketModel
+			{
+				PacketType = packetType,
+				DataSize = dataSize,
+				ExtraDataBit = extraDataBit
+			};
 		}
 	}
 }
