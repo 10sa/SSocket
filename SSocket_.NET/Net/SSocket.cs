@@ -182,6 +182,10 @@ namespace SSocketLib.Net
 			return InitEncryptSend(dataSize, type);
 		}
 
+		/// <summary>
+		/// Start sending SSocket protocol.
+		/// </summary>
+		/// <returns>The stream that stores the data to be sent.</returns>
 		public CryptoStream BeginSend(long dataSize, long type = (long)SSocketPacketType.Data)
 		{
 			return InitEncryptSend(dataSize, Int64ToSSocketPacketType(type));
@@ -257,7 +261,7 @@ namespace SSocketLib.Net
 				{
 					byte[] buffer = new byte[IOBufferLength];
 					long leftFileSize = reader.BaseStream.Length;
-					socket.Send(new SSocketPacket(SSocketPacketType.Data, leftFileSize, ExtraDataBit).GetBytes());
+					socket.Send(new SSocketPacket(sendType, leftFileSize, ExtraDataBit).GetBytes());
 
 					int readedSize;
 					do
