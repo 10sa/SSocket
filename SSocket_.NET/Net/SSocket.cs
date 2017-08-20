@@ -23,7 +23,6 @@ namespace SSocketLib.Net
 		private AESManager aesManager;
 		private Socket socket;
 
-		private long dataSize;
 		private bool isSegmentation = false;
 		#endregion
 
@@ -163,7 +162,7 @@ namespace SSocketLib.Net
 		public void Import(SSocketPacket packet)
 		{
 			ExtraDataBit = packet.GetPacketExtraDataBit();
-			dataSize = packet.GetPacketDataSize();
+			receiveDataSize = packet.GetPacketDataSize();
 			isSegmentation = packet.HasExtraDataBit(SSocketExtraDataBit.StartSegmentation);
 		}
 		#endregion
@@ -177,26 +176,25 @@ namespace SSocketLib.Net
 		/// Start sending SSocket protocol.
 		/// </summary>
 		/// <returns>The stream that stores the data to be sent.</returns>
-		public CryptoStream BeginSend(long dataSize, SSocketPacketType type = SSocketPacketType.Data)
+		public CryptoStream BeginSend(SSocketPacketType type = SSocketPacketType.Data)
 		{
-			return InitEncryptSend(dataSize, type);
+			return InitEncryptSend(type);
 		}
 
 		/// <summary>
 		/// Start sending SSocket protocol.
 		/// </summary>
 		/// <returns>The stream that stores the data to be sent.</returns>
-		public CryptoStream BeginSend(long dataSize, long type = (long)SSocketPacketType.Data)
+		public CryptoStream BeginSend(long type = (long)SSocketPacketType.Data)
 		{
-			return InitEncryptSend(dataSize, Int64ToSSocketPacketType(type));
+			return InitEncryptSend(Int64ToSSocketPacketType(type));
 		}
 
-		private CryptoStream InitEncryptSend(long dataSize, SSocketPacketType type)
+		private CryptoStream InitEncryptSend(SSocketPacketType type)
 		{
 			if (encryptCryptoStream == null)
 			{
 				encryptCryptoStream = aesManager.CreateEncryptStream(File.Create(GetCacheFilePath("Send"), 2048, FileOptions.None));
-				this.dataSize = dataSize;
 				sendType = type;
 
 				if (HasExtraDataBit(SSocketExtraDataBit.StartSegmentation))
@@ -238,7 +236,7 @@ namespace SSocketLib.Net
 					encryptCryptoStream.Write(buffer, offset, writeLength);
 					Send();
 
-					BeginSend(dataSize, sendType);
+					BeginSend(sendType);
 					encryptCryptoStream.Write(buffer, writeLength, rewriteLength);
 				}
 			}
@@ -300,6 +298,7 @@ namespace SSocketLib.Net
 
 		#region Decrypt Receive Part
 		private FileStream decryptingCacheStream;
+		private long receiveDataSize;
 
 		/// <summary>
 		/// Start receiving SSocket protocol.
@@ -354,7 +353,7 @@ namespace SSocketLib.Net
 
 		private int DecryptCryptoStreamData(FileStream decryptCacheStream, long dataSize)
 		{
-			this.dataSize = dataSize;
+			this.receiveDataSize = dataSize;
 			int decryptedSize = 0;
 
 			BinaryWriter decryptDataStream = new BinaryWriter(decryptCacheStream);
@@ -429,12 +428,12 @@ namespace SSocketLib.Net
 
 		private void SendPacket(Socket socket, SSocketPacketType type)
 		{
-			socket.Send(new SSocketPacket(type, dataSize, ExtraDataBit).GetBytes());
+			socket.Send(new SSocketPacket(type, receiveDataSize, ExtraDataBit).GetBytes());
 		}
 
 		private void SendPacket(SSocketPacketType type)
 		{
-			socket.Send(new SSocketPacket(type, dataSize, ExtraDataBit).GetBytes());
+			socket.Send(new SSocketPacket(type, receiveDataSize, ExtraDataBit).GetBytes());
 		}
 
 		private string GetCacheFilePath(string subPath = "")
