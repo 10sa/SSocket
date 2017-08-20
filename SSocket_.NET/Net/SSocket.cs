@@ -247,24 +247,27 @@ namespace SSocketLib.Net
 		/// </summary>
 		public void Send()
 		{
-			encryptCryptoStream.FlushFinalBlock();
-			encryptCryptoStream.Dispose();
-
-			encryptCryptoStream = null;
-			using (BinaryReader reader = new BinaryReader(File.Open(GetCacheFilePath("Send"), FileMode.Open)))
+			if (stackedDataSize > 0)
 			{
-				byte[] buffer = new byte[IOBufferLength];
-				long leftFileSize = reader.BaseStream.Length;
-				socket.Send(new SSocketPacket(SSocketPacketType.Data, leftFileSize, ExtraDataBit).GetBytes());
+				encryptCryptoStream.FlushFinalBlock();
+				encryptCryptoStream.Dispose();
 
-				int readedSize;
-				do
+				encryptCryptoStream = null;
+				using (BinaryReader reader = new BinaryReader(File.Open(GetCacheFilePath("Send"), FileMode.Open)))
 				{
-					readedSize = reader.Read(buffer, 0, buffer.Length);
-					socket.Send(buffer, readedSize, SocketFlags.None);
-					leftFileSize -= readedSize;
+					byte[] buffer = new byte[IOBufferLength];
+					long leftFileSize = reader.BaseStream.Length;
+					socket.Send(new SSocketPacket(SSocketPacketType.Data, leftFileSize, ExtraDataBit).GetBytes());
+
+					int readedSize;
+					do
+					{
+						readedSize = reader.Read(buffer, 0, buffer.Length);
+						socket.Send(buffer, readedSize, SocketFlags.None);
+						leftFileSize -= readedSize;
+					}
+					while (leftFileSize > 0);
 				}
-				while (leftFileSize > 0);
 			}
 
 			File.Delete(GetCacheFilePath("Send"));
