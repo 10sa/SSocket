@@ -1,9 +1,9 @@
 ﻿using System;
 using System.Runtime.InteropServices;
-using SSocket.Models;
-using SSocket.Enums;
+using SSocketLib.Models;
+using SSocketLib.Enums;
 
-namespace SSocket.Collections
+namespace SSocketLib.Collections
 {
 	/// <summary>
 	/// A collection that implements SSocket protocol packets.

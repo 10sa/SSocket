@@ -1,4 +1,4 @@
-﻿namespace SSocket.Enums
+﻿namespace SSocketLib.Enums
 {
 	/// <summary>
 	/// The reserved EBD enumeration of the SSocket protocol.

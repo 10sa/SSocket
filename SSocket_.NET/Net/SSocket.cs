@@ -5,11 +5,11 @@ using System.Security.Cryptography;
 using System.Security;
 using System.IO;
 
-using SSocket.Security;
-using SSocket.Enums;
-using SSocket.Collections;
+using SSocketLib.Security;
+using SSocketLib.Enums;
+using SSocketLib.Collections;
 
-namespace SSocket.Net
+namespace SSocketLib.Net
 {
 	/// <summary>
 	/// Implements the SSocket protocol socket interface. This class cannot be inherited.
@@ -171,21 +171,33 @@ namespace SSocket.Net
 		#region Encrypt Send Part
 		private CryptoStream encryptCryptoStream;
 		private long stackedDataSize;
+		private SSocketPacketType sendType;
 
 		/// <summary>
 		/// Start sending SSocket protocol.
 		/// </summary>
 		/// <returns>The stream that stores the data to be sent.</returns>
-		public CryptoStream BeginSend(long dataSize)
+		public CryptoStream BeginSend(long dataSize, SSocketPacketType type = SSocketPacketType.Data)
+		{
+			return InitEncryptSend(dataSize, type);
+		}
+
+		public CryptoStream BeginSend(long dataSize, long type = (long)SSocketPacketType.Data)
+		{
+			return InitEncryptSend(dataSize, Int64ToSSocketPacketType(type));
+		}
+
+		private CryptoStream InitEncryptSend(long dataSize, SSocketPacketType type)
 		{
 			if (encryptCryptoStream == null)
 			{
 				encryptCryptoStream = aesManager.CreateEncryptStream(File.Create(GetCacheFilePath("Send"), 2048, FileOptions.None));
 				this.dataSize = dataSize;
+				sendType = type;
 
 				if (HasExtraDataBit(SSocketExtraDataBit.StartSegmentation))
 				{
-					SendPacket(SSocketPacketType.Data);
+					SendPacket(type);
 
 					SetExtraDataBit((long)SSocketExtraDataBit.SegmentPacket);
 					RemoveExtraDataBit((long)SSocketExtraDataBit.StartSegmentation);
@@ -222,7 +234,7 @@ namespace SSocket.Net
 					encryptCryptoStream.Write(buffer, offset, writeLength);
 					Send();
 
-					BeginSend(dataSize);
+					BeginSend(dataSize, sendType);
 					encryptCryptoStream.Write(buffer, writeLength, rewriteLength);
 				}
 			}
@@ -387,6 +399,11 @@ namespace SSocket.Net
 				isSegmentation = true;
 
 			return helloPacket;
+		}
+
+		private SSocketPacketType Int64ToSSocketPacketType(long type)
+		{
+			return (SSocketPacketType)Enum.Parse(typeof(SSocketPacketType), type.ToString());
 		}
 
 		private void ReceiveHelloPacket(Socket socket, SSocketPacketType helloType)

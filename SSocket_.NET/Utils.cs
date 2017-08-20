@@ -5,7 +5,7 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Runtime.InteropServices;
 
-namespace SSocket
+namespace SSocketLib
 {
 	static class Utils
 	{

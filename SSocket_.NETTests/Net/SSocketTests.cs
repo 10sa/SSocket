@@ -1,5 +1,5 @@
 ﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
-using SSocket.Net;
+using SSocketLib.Net;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -9,10 +9,10 @@ using System.IO;
 using System.Net;
 using System.Security;
 
-using SSocket.Collections;
-using SSocket.Enums;
+using SSocketLib.Collections;
+using SSocketLib.Enums;
 
-namespace SSocket.Net.Tests
+namespace SSocketLib.Net.Tests
 {
 	[TestClass()]
 	public class SSocketTests

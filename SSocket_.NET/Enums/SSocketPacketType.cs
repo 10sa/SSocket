@@ -1,4 +1,4 @@
-﻿namespace SSocket.Enums
+﻿namespace SSocketLib.Enums
 {
 	/// <summary>
 	/// The reserved packet type enumeration of SSocket protocol.

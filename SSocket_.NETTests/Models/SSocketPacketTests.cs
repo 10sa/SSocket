@@ -1,12 +1,12 @@
 ﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
-using SSocket.Models;
+using SSocketLib.Models;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace SSocket.Collections.Tests
+namespace SSocketLib.Collections.Tests
 {
 	[TestClass()]
 	public class SSocketPacketTests

@@ -1,7 +1,7 @@
 ﻿using System.Runtime.InteropServices;
-using SSocket.Enums;
+using SSocketLib.Enums;
 
-namespace SSocket.Models
+namespace SSocketLib.Models
 {
 	[StructLayout(LayoutKind.Sequential, Pack =1)]
 	struct SSocketPacketModel

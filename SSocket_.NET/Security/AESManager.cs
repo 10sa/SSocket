@@ -2,7 +2,7 @@
 using System.Security.Cryptography;
 using System.IO;
 
-namespace SSocket.Security
+namespace SSocketLib.Security
 {
 	class AESManager
 	{
