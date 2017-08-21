@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Net.Sockets;
+using System.Threading;
 using System.Net;
 using System.Security.Cryptography;
 using System.Security;
@@ -159,6 +160,10 @@ namespace SSocketLib.Net
 			return helloPacket;
 		}
 
+		/// <summary>
+		/// Socket info import from SSocketPacket class to SSocket.
+		/// </summary>
+		/// <param name="packet">SSocketPacket class to import.</param>
 		public void Import(SSocketPacket packet)
 		{
 			ExtraDataBit = packet.GetPacketExtraDataBit();
@@ -166,6 +171,10 @@ namespace SSocketLib.Net
 			isSegmentation = packet.HasExtraDataBit(SSocketExtraDataBit.StartSegmentation);
 		}
 
+		/// <summary>
+		/// Gets the remote endpoint.
+		/// </summary>
+		/// <returns>The EndPoint with which the Socket is communicating.</returns>
 		public EndPoint GetRemoteEndPoint()
 		{
 			return socket.RemoteEndPoint;
@@ -176,6 +185,7 @@ namespace SSocketLib.Net
 		private CryptoStream encryptCryptoStream;
 		private long stackedDataSize;
 		private SSocketPacketType sendType;
+		private object sendLocker = new object();
 
 		/// <summary>
 		/// Start sending SSocket protocol.
@@ -212,6 +222,7 @@ namespace SSocketLib.Net
 					stackedDataSize = 0;
 				}
 
+				Monitor.Enter(sendLocker);
 				return encryptCryptoStream;
 			}
 			else
@@ -277,6 +288,7 @@ namespace SSocketLib.Net
 				}
 			}
 
+			Monitor.Exit(sendLocker);
 			File.Delete(GetCacheFilePath("Send"));
 		}
 
@@ -304,6 +316,7 @@ namespace SSocketLib.Net
 		#region Decrypt Receive Part
 		private FileStream decryptingCacheStream;
 		private long receiveDataSize;
+		private object receiveLocker = new object();
 
 		/// <summary>
 		/// Start receiving SSocket protocol.
@@ -311,7 +324,10 @@ namespace SSocketLib.Net
 		public void BeginReceive()
 		{
 			if (decryptingCacheStream == null)
+			{
 				decryptingCacheStream = File.Create(GetCacheFilePath("EncryptedReceive"), IOBufferLength, FileOptions.DeleteOnClose);
+				Monitor.Enter(receiveLocker);
+			}
 			else
 				throw new InvalidOperationException("Already Initalized.");
 		}
@@ -350,6 +366,7 @@ namespace SSocketLib.Net
 				}
 
 				decryptCacheStream.Position = 0;
+				Monitor.Exit(receiveLocker);
 				return new BinaryReader(decryptCacheStream);
 			}
 			else
