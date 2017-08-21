@@ -15,7 +15,7 @@ namespace SSocketLib.Net
 	/// <summary>
 	/// Implements the SSocket protocol socket interface. This class cannot be inherited.
 	/// </summary>
-	public sealed class SSocket
+	public sealed class SSocket : IDisposable
 	{
 		#region Private variables
 		private const int IOBufferLength = 2048;
@@ -47,6 +47,11 @@ namespace SSocketLib.Net
 		/// Limits the maximum size of packet data.If data larger than this size is input, it is divided and transmitted. If 0, there is no limit.
 		/// </summary>
 		public long PacketMaxSize { get; set; }
+
+		/// <summary>
+		/// Gets a value that indicates whether a Socket is connected to a remote host as of the last Send or Receive operation.
+		/// </summary>
+		public bool Connected { get { return socket.Connected; } }
 		#endregion
 
 		#region Constructors
@@ -178,6 +183,16 @@ namespace SSocketLib.Net
 		public EndPoint GetRemoteEndPoint()
 		{
 			return socket.RemoteEndPoint;
+		}
+
+		/// <summary>
+		/// Releases all resources used by the current instance of the SSocket class.
+		/// </summary>
+		public void Dispose()
+		{
+			socket.Dispose();
+			aesManager.Dispose();
+			keyExchanger.Dispose();
 		}
 		#endregion
 
