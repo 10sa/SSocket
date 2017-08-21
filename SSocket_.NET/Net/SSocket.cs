@@ -222,6 +222,8 @@ namespace SSocketLib.Net
 
 		private CryptoStream InitEncryptSend(SSocketPacketType type)
 		{
+			Monitor.Enter(sendLocker);
+
 			if (encryptCryptoStream == null)
 			{
 				encryptCryptoStream = aesManager.CreateEncryptStream(File.Create(GetCacheFilePath("Send"), 2048, FileOptions.None));
@@ -237,7 +239,6 @@ namespace SSocketLib.Net
 					stackedDataSize = 0;
 				}
 
-				Monitor.Enter(sendLocker);
 				return encryptCryptoStream;
 			}
 			else
@@ -311,8 +312,9 @@ namespace SSocketLib.Net
 		/// Send a data to byte array, this method does not guarantee stability for large data and not support segmentation send.
 		/// </summary>
 		/// <param name="buffer">Data.to send.</param>
-		public void Send(byte[] buffer, int length)
+		public void Send(byte[] buffer, int length, long packetType = (long)SSocketPacketType.Data)
 		{
+			Monitor.Enter(sendLocker);
 			MemoryStream memoryStream = new MemoryStream();
 			CryptoStream cryptoStream = aesManager.CreateEncryptStream(memoryStream);
 			cryptoStream.Write(buffer, 0, buffer.Length);
@@ -320,11 +322,12 @@ namespace SSocketLib.Net
 
 			byte[] encryptedData = memoryStream.ToArray();
 
-			socket.Send(new SSocketPacket(SSocketPacketType.Data, encryptedData.Length, ExtraDataBit & ~(long)SSocketExtraDataBit.StartSegmentation).GetBytes());
+			socket.Send(new SSocketPacket(packetType, encryptedData.Length, ExtraDataBit & ~(long)SSocketExtraDataBit.StartSegmentation).GetBytes());
 			socket.Send(encryptedData, encryptedData.Length, SocketFlags.None);
 
 			cryptoStream.Dispose();
 			memoryStream.Dispose();
+			Monitor.Exit(sendLocker);
 		}
 		#endregion
 
