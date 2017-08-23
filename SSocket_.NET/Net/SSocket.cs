@@ -214,10 +214,20 @@ namespace SSocketLib.Net
 		/// <summary>
 		/// Start sending SSocket protocol.
 		/// </summary>
+		/// <param name="type">Packet of type.</param>
 		/// <returns>The stream that stores the data to be sent.</returns>
-		public CryptoStream BeginSend(long type = (long)SSocketPacketType.Data)
+		public CryptoStream BeginSend(long type)
 		{
 			return InitEncryptSend(Int64ToSSocketPacketType(type));
+		}
+
+		/// <summary>
+		/// Start sending SSocket protocol.
+		/// </summary>
+		/// <returns>The stream that stores the data to be sent.</returns>
+		public CryptoStream BeginSend()
+		{
+			return InitEncryptSend(SSocketPacketType.Data);
 		}
 
 		private CryptoStream InitEncryptSend(SSocketPacketType type)
@@ -312,7 +322,24 @@ namespace SSocketLib.Net
 		/// Send a data to byte array, this method does not guarantee stability for large data and not support segmentation send.
 		/// </summary>
 		/// <param name="buffer">Data.to send.</param>
-		public void Send(byte[] buffer, int length, long packetType = (long)SSocketPacketType.Data)
+		/// <param name="length">Data of length.</param>
+		/// <param name="packetType">Packet of type.</param>
+		public void Send(byte[] buffer, int length, long packetType)
+		{
+			SendBytes(buffer, length, packetType);
+		}
+
+		/// <summary>
+		/// Send a data to byte array, this method does not guarantee stability for large data and not support segmentation send.
+		/// </summary>
+		/// <param name="buffer">Data.to send.</param>
+		/// <param name="length">Data of length.</param>
+		public void Send(byte[] buffer, int length)
+		{
+			SendBytes(buffer, length, (long)SSocketPacketType.Data);
+		}
+
+		private void SendBytes(byte[] buffer, int length, long packetType)
 		{
 			Monitor.Enter(sendLocker);
 			MemoryStream memoryStream = new MemoryStream();
