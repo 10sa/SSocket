@@ -51,7 +51,9 @@ namespace SSocketLib.Net.Tests
 			SSocket clientSocket = new SSocket();
 			clientSocket.Connect(new IPEndPoint(IPAddress.Loopback, 45050));
 
-			clientSocket.Send(TestData, TestData.Length);
+			clientSocket.BeginSend();
+			clientSocket.StackData(TestData, 0, TestData.Length);
+			clientSocket.Send();
 		}
 
 		[TestMethod()]

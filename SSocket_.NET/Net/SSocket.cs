@@ -265,7 +265,7 @@ namespace SSocketLib.Net
 		{
 			if (encryptCryptoStream != null)
 			{
-				if (stackedDataSize + length <= PacketMaxSize)
+				if (stackedDataSize + length <= PacketMaxSize || PacketMaxSize == 0)
 				{
 					encryptCryptoStream.Write(buffer, offset, length);
 					stackedDataSize += length;
