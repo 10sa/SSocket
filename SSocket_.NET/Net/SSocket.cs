@@ -18,8 +18,6 @@ namespace SSocketLib.Net
 	public sealed class SSocket : IDisposable
 	{
 		#region Private variables
-		private const int IOBufferLength = 2048;
-
 		private ECDiffieHellmanCng keyExchanger = new ECDiffieHellmanCng();
 		private AESManager aesManager;
 		private Socket socket;
@@ -248,6 +246,7 @@ namespace SSocketLib.Net
 		private long receiveDataSize;
 		private object receiveLocker = new object();
 
+		/*
 		/// <summary>
 		/// Start receiving SSocket protocol.
 		/// </summary>
@@ -343,6 +342,7 @@ namespace SSocketLib.Net
 			while (leftDataSize > 0);
 			decryptingCacheStream.Position = 0;
 		}
+		*/
 		#endregion
 
 		#region Private methods.
