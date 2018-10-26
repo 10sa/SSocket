@@ -203,122 +203,6 @@ namespace SSocketLib.Net
 		private object sendLocker = new object();
 
 		/// <summary>
-		/// Start sending SSocket protocol.
-		/// </summary>
-		/// <returns>The stream that stores the data to be sent.</returns>
-		public CryptoStream BeginSend(SSocketPacketType type = SSocketPacketType.Data)
-		{
-			return InitEncryptSend(type);
-		}
-
-		/// <summary>
-		/// Start sending SSocket protocol.
-		/// </summary>
-		/// <param name="type">Packet of type.</param>
-		/// <returns>The stream that stores the data to be sent.</returns>
-		public CryptoStream BeginSend(long type)
-		{
-			return InitEncryptSend(Int64ToSSocketPacketType(type));
-		}
-
-		/// <summary>
-		/// Start sending SSocket protocol.
-		/// </summary>
-		/// <returns>The stream that stores the data to be sent.</returns>
-		public CryptoStream BeginSend()
-		{
-			return InitEncryptSend(SSocketPacketType.Data);
-		}
-
-		private CryptoStream InitEncryptSend(SSocketPacketType type)
-		{
-			Monitor.Enter(sendLocker);
-
-			if (encryptCryptoStream == null)
-			{
-				encryptCryptoStream = aesManager.CreateEncryptStream(File.Create(GetCacheFilePath("Send"), 2048, FileOptions.None));
-				sendType = type;
-
-				if (HasExtraDataBit(SSocketExtraDataBit.StartSegmentation))
-				{
-					SendPacket(type);
-
-					SetExtraDataBit((long)SSocketExtraDataBit.SegmentPacket);
-					RemoveExtraDataBit((long)SSocketExtraDataBit.StartSegmentation);
-
-					stackedDataSize = 0;
-				}
-
-				return encryptCryptoStream;
-			}
-			else
-				throw new InvalidOperationException("Already initalized..");
-		}
-
-		/// <summary>
-		/// Writes a sequence of bytes to the current data store stream and advances the current position within the stream by the number of bytes written.
-		/// </summary>
-		/// <param name="buffer">An array of bytes. This method copies count bytes from buffer to the current stream.</param>
-		/// <param name="offset">The byte offset in buffer at which to begin copying bytes to the current stream.</param>
-		/// <param name="length">The number of bytes to be written to the current stream.</param>
-		public void StackData(byte[] buffer, int offset, int length)
-		{
-			if (encryptCryptoStream != null)
-			{
-				if (stackedDataSize + length <= PacketMaxSize || PacketMaxSize == 0)
-				{
-					encryptCryptoStream.Write(buffer, offset, length);
-					stackedDataSize += length;
-				}
-				else
-				{
-					int writeLength = (int)(length + stackedDataSize - PacketMaxSize);
-					int rewriteLength = length - writeLength;
-
-					encryptCryptoStream.Write(buffer, offset, writeLength);
-					Send();
-
-					BeginSend(sendType);
-					encryptCryptoStream.Write(buffer, writeLength, rewriteLength);
-				}
-			}
-			else
-				throw new InvalidOperationException("Not initalized.");
-		}
-
-		/// <summary>
-		/// Sends data written to internal storage to the associated Socket using the specified ExtraDataBit.
-		/// </summary>
-		public void Send()
-		{
-			if (stackedDataSize > 0)
-			{
-				encryptCryptoStream.FlushFinalBlock();
-				encryptCryptoStream.Dispose();
-
-				encryptCryptoStream = null;
-				using (BinaryReader reader = new BinaryReader(File.Open(GetCacheFilePath("Send"), FileMode.Open)))
-				{
-					byte[] buffer = new byte[IOBufferLength];
-					long leftFileSize = reader.BaseStream.Length;
-					socket.Send(new SSocketPacket(sendType, leftFileSize, ExtraDataBit).GetBytes());
-
-					int readedSize;
-					do
-					{
-						readedSize = reader.Read(buffer, 0, buffer.Length);
-						socket.Send(buffer, readedSize, SocketFlags.None);
-						leftFileSize -= readedSize;
-					}
-					while (leftFileSize > 0);
-				}
-			}
-
-			Monitor.Exit(sendLocker);
-			File.Delete(GetCacheFilePath("Send"));
-		}
-
-		/// <summary>
 		/// Send a data to byte array, this method does not guarantee stability for large data and not support segmentation send.
 		/// </summary>
 		/// <param name="buffer">Data.to send.</param>
@@ -348,6 +232,7 @@ namespace SSocketLib.Net
 			cryptoStream.FlushFinalBlock();
 
 			byte[] encryptedData = memoryStream.ToArray();
+			// int calcSize = length + (16 - (length % 16));
 
 			socket.Send(new SSocketPacket(packetType, encryptedData.Length, ExtraDataBit & ~(long)SSocketExtraDataBit.StartSegmentation).GetBytes());
 			socket.Send(encryptedData, encryptedData.Length, SocketFlags.None);
